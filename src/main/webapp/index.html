@@ -1,0 +1,189 @@
+<html ng-app='myApp'>
+<script
+        src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.4/angular.min.js">
+</script>
+
+
+<head>
+    <title>Nizarazu 9 Elevator</title>
+    <link rel="stylesheet" href="css/main.css">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <!-- Font-Awesome -->
+    <link href="Font-Awesome/css/font-awesome.min.css" rel="stylesheet">
+    <!-- My style -->
+    <link href="css/style.css" rel="stylesheet" media="screen">
+</head>
+
+<body>
+
+<div class="container" ng-controller="TextController">
+    <div class="row">
+
+        <div id="featured" class="col-md-2">
+
+            <hgroup>
+                <h3>Elevator Constant</h3>
+            </hgroup>
+
+            Cabin Count         <b>{{elevatorModel.cabinCount}}</b><br>
+            Cabin Size          <b>{{elevatorModel.cabinSize}}</b><br>
+            Higher Floor        <b>{{elevatorModel.higherFloor}}</b><br>
+            Lower Floor         <b>{{elevatorModel.lowerFloor}}</b><br>
+
+            <hgroup>
+                <h3>Elevator  Stats</h3>
+            </hgroup>
+
+            All users    <b>{{elevatorModel.allUsers}}</b><br>
+            Happy users  <b>{{elevatorModel.happyUsers}}</b><br>
+
+            <hgroup>
+                <h3>Error Information</h3>
+            </hgroup>
+
+            Abnormal Entries    <b>{{elevatorModel.abnormalUserEntring}}</b><br>
+            Abnormal Exit       <b>{{elevatorModel.abnormalUserExiting}}</b><br>
+            Reset               <b>{{elevatorModel.resetNumber}}</b><br>
+
+            <hgroup>
+                <h3>Cabin Information</h3>
+            </hgroup>
+
+            users no cabin <b></b>{{elevatorModel.usersWaitingElevator.length}}<br><br>
+
+            <hgroup>
+                <h2>SCORE</h2>
+            </hgroup>
+
+            score               <b>{{elevatorModel.score}}</b><br>
+
+
+        </div>
+
+
+        <div ng-repeat="cabin in elevatorModel.cabinsList" class="col-md-5">
+
+            <hgroup>
+                <h2>Cabin ID            <b style="color:red">{{cabin.id}}</b></h2>
+            </hgroup>
+
+            Current Floor       <b>{{cabin.currentFloor}}</b><br>
+            Direction           <b>{{cabin.elevatorDirection}}</b><br>
+            DoorOpened          <b>{{cabin.doorOpened}}</b><br>
+            Users In Cabin      <b>{{cabin.usersInElevator.length}}</b><br>
+            Users Waiting       <b>{{cabin.usersWaitingElevator.length}}</b><br><br>
+
+            <table>
+                <tr>
+                    <th>Coming From</th>
+                    <th><strong>direction</strong></th>
+                    <th><strong>Waiting</strong></th>
+                    <th><strong>Travelling</strong></th>
+                    <th><strong>Score(*)</strong></th>
+                </tr>
+
+                <tr ng-repeat='user in cabin.usersWaitingElevator | orderBy:predicat:reverse'>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.comingFrom}}
+                    </td>
+                    <td ng-style="directionCell(user)">
+                    </td>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.waitTime}}
+                    </td>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.travelTime}}
+                    </td>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.stillCanScore}}
+                    </td>
+                </tr>
+            </table>
+
+            <table>
+                <tr>
+                    <th><strong>Going To</strong>   </th>
+                    <th><strong>From</strong></th>
+                    <th><strong>Waiting</strong></th>
+                    <th><strong>Travelling</strong></th>
+                    <th><strong>Score(*)</strong></th>
+                </tr>
+
+                <tr ng-repeat='user in cabin.usersInElevator | orderBy:predicate:reverse'>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.floorToGo}}
+                    </td>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.comingFrom}}
+                    </td>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.waitTime}}
+                    </td>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.travelTime}}
+                    </td>
+                    <td ng-style="highlightWhenSameFloor(user,cabin)">
+                        {{user.stillCanScore}}
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    var myAppModule = angular.module('myApp', []);
+
+    myAppModule.controller('TextController',
+            function($scope, $http, $timeout) {
+
+                (function tick() {
+                    $http.get('rest/webapp/model').success(function(data, status, headers, config) {
+                        $scope.elevatorModel = data;
+                    }).error(function(data, status, headers, config) {
+                                // Handle the error
+                            });
+                    $timeout(tick, 1000);
+                })();
+
+                $scope.highlightWhenSameFloor = function (user,cabin) {
+                    if ( user.stillCanScore == 0 ){
+                        return { background: "#F2F2F2" };
+                    }
+                    if ( user.userStatus == 'IN_ELEVATOR'){
+                        if ( user.floorToGo == cabin.currentFloor){
+                            return { background: "#A9F5A9" };
+                        }
+                        return { background: "white" };
+                    }
+                    if ( user.comingFrom == cabin.currentFloor){
+                        return { background: "#A9F5A9" };
+                    }
+                    return { background: "white" };
+
+                }
+
+                $scope.directionCell = function(user) {
+                    if ( user.direction == 'UP'){
+                        return { 'background': 'white', 'background-image': 'url(img/button_up.png)','background-size' : 'cover' };
+                    }
+                    if ( user.direction == 'DOWN'){
+                        return { 'background': 'white', 'background-image': 'url(img/button_down.png)','background-size' : 'cover' };
+                    }
+                }
+
+                $scope.predicat = '-comingFrom';
+                $scope.predicate = '-floorToGo';
+
+            });
+
+
+</script>
+
+</body>
+</html>
